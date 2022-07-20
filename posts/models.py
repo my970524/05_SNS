@@ -18,6 +18,14 @@ class Post(models.Model):
     created_at = models.DateTimeField("작성일자", auto_now_add=True)
     updated_at = models.DateTimeField("수정일자", auto_now=True)
     is_deleted = models.BooleanField("삭제여부", default=False)
+    view_counts = models.PositiveIntegerField("조회수", default=0)
+    like_users = models.ManyToManyField(
+        to=User, verbose_name="좋아요한 사람", related_name="like_posts", blank=True, null=True
+    )
 
     def __str__(self):
         return f"id:{self.pk}, title:{self.title}"
+
+    @property
+    def like_count(self):
+        return self.like_posts.count()
