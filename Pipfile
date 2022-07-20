@@ -10,6 +10,7 @@ black = "*"
 flake8 = "*"
 pre-commit = "*"
 djangorestframework = "*"
+djangorestframework-simplejwt = "*"
 
 [dev-packages]
 
