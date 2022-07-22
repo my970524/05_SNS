@@ -5,7 +5,13 @@ from rest_framework.response import Response
 from config.permissions import IsOwnerOrReadOnly
 
 from .models import Post
-from .serializers import PostCreateSerializer, PostDeleteSerializer, PostListSerializer, PostUpdateSerializer
+from .serializers import (
+    PostCreateSerializer,
+    PostDeleteSerializer,
+    PostListSerializer,
+    PostRestoreSerializer,
+    PostUpdateSerializer,
+)
 
 
 # url : GET, POST /api/v1/posts
@@ -66,3 +72,15 @@ class PostRetrieveUpdateDeleteView(generics.RetrieveUpdateAPIView):
     def put(self, request, *args, **kwargs):
         """부분수정도 가능하도록 partial_update를 지원합니다."""
         return self.partial_update(request, *args, **kwargs)
+
+
+# url : PATCH /api/v1/posts/<post_id>/restore
+class PostRestoreView(generics.UpdateAPIView):
+    """
+    삭제된 게시글 복구 view 입니다.
+    """
+
+    permission_classes = [IsOwnerOrReadOnly]
+
+    queryset = Post.objects.all()
+    serializer_class = PostRestoreSerializer
