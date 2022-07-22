@@ -21,6 +21,8 @@ class PostListCreateView(generics.ListCreateAPIView):
 
     게시글 목록은 모든 유저가 볼 수 있지만,
     게시글 작성은 로그인 한 유저만 가능합니다.
+    쿼리파라미터로 is_deleted=true를 받을 경우,
+    삭제된 게시글 목록을 보여줍니다.
     """
 
     permission_classes = [IsAuthenticatedOrReadOnly]
@@ -39,6 +41,23 @@ class PostListCreateView(generics.ListCreateAPIView):
             return PostListSerializer
         else:
             return PostCreateSerializer
+
+    def list(self, request):
+        """
+        쿼리 파라미터로 is_deleted=true가 있는 경우,
+        삭제된 게시글 목록을 보여줍니다.
+        삭제된 게시글은 본인만 볼 수 있습니다.
+        """
+        if request.GET:
+            if request.user.is_anonymous:
+                return Response({"error": "접근권한이 없습니다."}, status=status.HTTP_401_UNAUTHORIZED)
+            queryset = Post.objects.filter(writer=request.user, is_deleted=True)
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(serializer.data)
+        else:
+            queryset = self.get_queryset()
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(serializer.data)
 
     def create(self, request):
         context = {"user": request.user}
