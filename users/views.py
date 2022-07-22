@@ -7,6 +7,7 @@ from .serializers import UserSignupSerializer
 from .token_serializers import MyTokenObtainPairSerializer
 
 
+# url : POST /api/v1/users/signup
 class UserSignupView(APIView):
     """
     회원가입 view 입니다.
@@ -21,6 +22,7 @@ class UserSignupView(APIView):
         return Response({"message": "회원가입에 실패했습니다."}, status=status.HTTP_400_BAD_REQUEST)
 
 
+# url : POST /api/v1/users/login
 class UserLoginView(APIView):
     """
     로그인 view 입니다.

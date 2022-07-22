@@ -6,6 +6,7 @@ from .models import Post
 from .serializers import PostCreateSerializer, PostListSerializer
 
 
+# url : GET, POST /api/v1/posts
 class PostListCreateView(generics.ListCreateAPIView):
     """
     게시글 목록보기, 게시글 생성 view 입니다.
