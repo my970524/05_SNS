@@ -98,6 +98,11 @@ class PostUpdateSerializer(ModelSerializer):
 
 
 class PostDeleteSerializer(ModelSerializer):
+    """
+    게시글 삭제 시리얼라이저 입니다.
+    is_deleted 필드 값을 True로 수정합니다.
+    """
+
     def update(self, instance, validated_data):
         instance.is_deleted = True
         instance.save()
