@@ -1,4 +1,5 @@
 from rest_framework import generics, status
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 
 from .models import Post
@@ -6,6 +7,8 @@ from .serializers import PostCreateSerializer, PostListSerializer
 
 
 class PostListCreateView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
     def get_queryset(self):
         if self.request.method == "GET":
             queryset = Post.objects.filter(is_deleted=False)
