@@ -1,3 +1,4 @@
+from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer, SerializerMethodField
 
 from .models import Post, Tag
@@ -95,3 +96,43 @@ class PostUpdateSerializer(ModelSerializer):
     class Meta:
         model = Post
         fields = ["title", "content", "tags"]
+
+
+class PostDeleteSerializer(ModelSerializer):
+    """
+    게시글 삭제 시리얼라이저 입니다.
+    is_deleted 필드 값을 True로 수정합니다.
+    """
+
+    tags = TagSerializer(many=True, read_only=True)
+
+    def update(self, instance, validated_data):
+        if instance.is_deleted == True:
+            raise serializers.ValidationError("이 게시글은 이미 삭제되었습니다.")
+        instance.is_deleted = True
+        instance.save()
+        return instance
+
+    class Meta:
+        model = Post
+        fields = "__all__"
+
+
+class PostRestoreSerializer(ModelSerializer):
+    """
+    삭제된 게시글 복구 시리얼라이저 입니다.
+    is_deleted 필드 값을 False로 수정합니다.
+    """
+
+    tags = TagSerializer(many=True, read_only=True)
+
+    def update(self, instance, validated_data):
+        if instance.is_deleted == False:
+            raise serializers.ValidationError("이 게시글은 삭제된 게시글이 아닙니다.")
+        instance.is_deleted = False
+        instance.save()
+        return instance
+
+    class Meta:
+        model = Post
+        fields = "__all__"
