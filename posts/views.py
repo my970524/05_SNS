@@ -2,6 +2,8 @@ from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 
+from config.permissions import IsOwnerOrReadOnly
+
 from .models import Post
 from .serializers import PostCreateSerializer, PostListSerializer, PostUpdateSerializer
 
@@ -47,6 +49,8 @@ class PostRetrieveUpdateView(generics.RetrieveUpdateAPIView):
     """
     게시글 상세조회, 수정, 삭제(soft delete) view 입니다.
     """
+
+    permission_classes = [IsOwnerOrReadOnly]
 
     queryset = Post.objects.all()
 
