@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from config.permissions import IsOwnerOrReadOnly
 
 from .models import Post
-from .serializers import PostCreateSerializer, PostListSerializer, PostUpdateSerializer
+from .serializers import PostCreateSerializer, PostDeleteSerializer, PostListSerializer, PostUpdateSerializer
 
 
 # url : GET, POST /api/v1/posts
@@ -45,7 +45,7 @@ class PostListCreateView(generics.ListCreateAPIView):
 
 
 # url : GET, PUT, PATCH /api/v1/posts/<post_id>
-class PostRetrieveUpdateView(generics.RetrieveUpdateAPIView):
+class PostRetrieveUpdateDeleteView(generics.RetrieveUpdateAPIView):
     """
     게시글 상세조회, 수정, 삭제(soft delete) view 입니다.
     """
@@ -58,8 +58,10 @@ class PostRetrieveUpdateView(generics.RetrieveUpdateAPIView):
         """HTTP 메소드에 따라 다른 serializer를 반환합니다."""
         if self.request.method == "GET":
             return PostListSerializer
-        else:
+        elif self.request.method == "PUT":
             return PostUpdateSerializer
+        else:
+            return PostDeleteSerializer
 
     def put(self, request, *args, **kwargs):
         """부분수정도 가능하도록 partial_update를 지원합니다."""

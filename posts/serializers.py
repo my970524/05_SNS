@@ -95,3 +95,14 @@ class PostUpdateSerializer(ModelSerializer):
     class Meta:
         model = Post
         fields = ["title", "content", "tags"]
+
+
+class PostDeleteSerializer(ModelSerializer):
+    def update(self, instance, validated_data):
+        instance.is_deleted = True
+        instance.save()
+        return instance
+
+    class Meta:
+        model = Post
+        fields = "__all__"
