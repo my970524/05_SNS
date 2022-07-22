@@ -4,6 +4,10 @@ from .models import User
 
 
 class UserSignupSerializer(serializers.ModelSerializer):
+    """
+    회원가입에 사용되는 시리얼라이저 입니다.
+    """
+
     class Meta:
         model = User
         fields = "__all__"

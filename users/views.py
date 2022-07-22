@@ -8,6 +8,10 @@ from .token_serializers import MyTokenObtainPairSerializer
 
 
 class UserSignupView(APIView):
+    """
+    회원가입 view 입니다.
+    """
+
     def post(self, request):
         serializer = UserSignupSerializer(data=request.data)
 
@@ -18,6 +22,11 @@ class UserSignupView(APIView):
 
 
 class UserLoginView(APIView):
+    """
+    로그인 view 입니다.
+    입력한 정보가 유효하다면, access 토큰과 refresh 토큰을 반환합니다.
+    """
+
     def post(self, request):
         user = authenticate(email=request.data.get("email"), password=request.data.get("password"))
 

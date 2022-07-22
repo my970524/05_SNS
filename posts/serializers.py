@@ -10,6 +10,10 @@ class TagSerializer(ModelSerializer):
 
 
 class PostListSerializer(ModelSerializer):
+    """
+    게시글 목록 보기에 사용되는 시리얼라이저 입니다.
+    """
+
     writer = SerializerMethodField()
     tags = SerializerMethodField()
 
@@ -30,6 +34,14 @@ class PostListSerializer(ModelSerializer):
 
 
 class PostCreateSerializer(ModelSerializer):
+    """
+    게시글 생성에 사용되는 시리얼라이저 입니다.
+
+    create 메소드를 오버라이딩 합니다.
+    request body에서 받은 tags에 담긴 태그들이
+    Tag 테이블에 존재하는지 확인하고, 없다면 생성하는 과정이 동반됩니다.
+    """
+
     tags = TagSerializer(many=True)
 
     def create(self, validated_data):
