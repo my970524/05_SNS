@@ -58,7 +58,13 @@ class PostRetrieveUpdateDeleteView(generics.RetrieveUpdateAPIView):
 
     permission_classes = [IsOwnerOrReadOnly]
 
-    queryset = Post.objects.all()
+    def get_queryset(self):
+        """HTTP 메소드에 따라 다른 queryset을 반환합니다."""
+        if self.request.method == "PATCH":
+            queryset = Post.objects.all()
+        else:
+            queryset = Post.objects.filter(is_deleted=False)
+        return queryset
 
     def get_serializer_class(self):
         """HTTP 메소드에 따라 다른 serializer를 반환합니다."""
@@ -82,5 +88,6 @@ class PostRestoreView(generics.UpdateAPIView):
 
     permission_classes = [IsOwnerOrReadOnly]
 
+    # queryset = Post.objects.filter(is_deleted=True)
     queryset = Post.objects.all()
     serializer_class = PostRestoreSerializer

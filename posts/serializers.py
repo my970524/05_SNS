@@ -107,6 +107,8 @@ class PostDeleteSerializer(ModelSerializer):
     tags = TagSerializer(many=True, read_only=True)
 
     def update(self, instance, validated_data):
+        if instance.is_deleted == True:
+            raise serializers.ValidationError("이 게시글은 이미 삭제되었습니다.")
         instance.is_deleted = True
         instance.save()
         return instance
