@@ -30,7 +30,7 @@ class PostListSerializer(ModelSerializer):
 
     class Meta:
         model = Post
-        exclude = ["id", "updated_at", "is_deleted"]
+        exclude = ["is_deleted"]
 
 
 class PostCreateSerializer(ModelSerializer):
@@ -46,22 +46,51 @@ class PostCreateSerializer(ModelSerializer):
 
     def create(self, validated_data):
         writer = self.context["user"]
-        title = validated_data.get("title")
-        content = validated_data.get("content")
         tags = validated_data.pop("tags")
 
-        post = Post(
-            writer=writer,
-            title=title,
-            content=content,
-        )
+        post = Post.objects.create(writer=writer, **validated_data)
         post.save()
 
-        for t in tags:
-            tag, created = Tag.objects.get_or_create(name=t["name"])
-            post.tags.add(tag)
+        if tags:
+            for t in tags:
+                tag, created = Tag.objects.get_or_create(name=t["name"])
+                post.tags.add(tag)
 
         return post
+
+    class Meta:
+        model = Post
+        fields = ["title", "content", "tags"]
+
+
+class PostUpdateSerializer(ModelSerializer):
+    """
+    게시글 수정에 사용되는 시리얼라이저 입니다.
+
+    update 메소드를 오버라이딩 합니다.
+    request body에서 받은 태그들로 게시글의 태그들이 교체 됩니다.
+    ex)
+    기존 태그 => #파이썬, #장고
+    request body => #drf
+    바뀐 태그 => #drf
+    """
+
+    tags = TagSerializer(many=True)
+
+    def update(self, instance, validated_data):
+        instance.title = validated_data.get("title", instance.title)
+        instance.content = validated_data.get("content", instance.content)
+        instance.save()
+
+        tags = validated_data.pop("tags", [])
+        if tags:
+            tag_objs = []
+            for t in tags:
+                tag, created = Tag.objects.get_or_create(name=t["name"])
+                tag_objs.append(tag)
+            instance.tags.set(tag_objs)
+
+        return instance
 
     class Meta:
         model = Post

@@ -2,8 +2,10 @@ from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 
+from config.permissions import IsOwnerOrReadOnly
+
 from .models import Post
-from .serializers import PostCreateSerializer, PostListSerializer
+from .serializers import PostCreateSerializer, PostListSerializer, PostUpdateSerializer
 
 
 # url : GET, POST /api/v1/posts
@@ -35,9 +37,30 @@ class PostListCreateView(generics.ListCreateAPIView):
     def create(self, request):
         context = {"user": request.user}
         serializer = self.get_serializer(data=request.data, context=context)
-        print(request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response({"error": "게시글 작성에 실패했습니다."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# url : GET, PUT, PATCH /api/v1/posts/<post_id>
+class PostRetrieveUpdateView(generics.RetrieveUpdateAPIView):
+    """
+    게시글 상세조회, 수정, 삭제(soft delete) view 입니다.
+    """
+
+    permission_classes = [IsOwnerOrReadOnly]
+
+    queryset = Post.objects.all()
+
+    def get_serializer_class(self):
+        """HTTP 메소드에 따라 다른 serializer를 반환합니다."""
+        if self.request.method == "GET":
+            return PostListSerializer
+        else:
+            return PostUpdateSerializer
+
+    def put(self, request, *args, **kwargs):
+        """부분수정도 가능하도록 partial_update를 지원합니다."""
+        return self.partial_update(request, *args, **kwargs)
