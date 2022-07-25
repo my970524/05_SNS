@@ -71,10 +71,9 @@ class DeletedPostListSerializer(PostBaseSerializer):
         exclude = []
 
 
-class PostCreateSerializer(PostBaseSerializer):
+class PostCreateSerializer(ModelSerializer):
     """
     게시글 생성에 사용되는 시리얼라이저 입니다.
-    PostBaseSerializer를 상속받습니다.
 
     create 메소드를 오버라이딩 합니다.
     request body에서 받은 tags에 담긴 태그들이
@@ -97,11 +96,15 @@ class PostCreateSerializer(PostBaseSerializer):
 
         return post
 
+    class Meta:
+        model = Post
+        fields = ["id", "title", "content", "tags"]
 
-class PostUpdateSerializer(PostBaseSerializer):
+
+class PostUpdateSerializer(PostCreateSerializer):
     """
     게시글 수정에 사용되는 시리얼라이저 입니다.
-    PostBaseSerializer를 상속받습니다.
+    PostCreateSerializer를 상속받습니다.
 
     update 메소드를 오버라이딩 합니다.
     request body에서 받은 태그들로 게시글의 태그들이 교체 됩니다.
