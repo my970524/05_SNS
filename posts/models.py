@@ -24,7 +24,3 @@ class Post(models.Model):
 
     def __str__(self):
         return f"id: {self.pk}/ title: {self.title}"
-
-    @property
-    def like_count(self):
-        return self.like_posts.count()
