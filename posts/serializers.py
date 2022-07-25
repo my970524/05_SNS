@@ -4,15 +4,19 @@ from rest_framework.serializers import ModelSerializer, SerializerMethodField
 from .models import Post, Tag
 
 
-class TagSerializer(ModelSerializer):
+class TagBaseSerializer(ModelSerializer):
+    """
+    Tag모델의 기본 시리얼라이저 입니다.
+    """
+
     class Meta:
         model = Tag
         fields = ["name"]
 
 
-class PostListSerializer(ModelSerializer):
+class PostBaseSerializer(ModelSerializer):
     """
-    게시글 목록 보기에 사용되는 시리얼라이저 입니다.
+    Post모델의 기본 시리얼라이저 입니다.
     """
 
     writer = SerializerMethodField()
@@ -34,6 +38,26 @@ class PostListSerializer(ModelSerializer):
         exclude = ["is_deleted"]
 
 
+class PostListSerializer(PostBaseSerializer):
+    """
+    게시글 목록 보기에 사용되는 시리얼라이저 입니다.
+    PostBaseSerializer를 상속받습니다.
+    """
+
+    pass
+
+
+class DeletedPostListSerializer(PostBaseSerializer):
+    """
+    삭제된 게시글 목록 보기에 사용되는 시리얼라이저 입니다.
+    PostBaseSerializer를 상속받습니다.
+    is_deleted를 포함한 모든 필드를 직렬화 합니다.
+    """
+
+    class Meta(PostBaseSerializer.Meta):
+        exclude = []
+
+
 class PostCreateSerializer(ModelSerializer):
     """
     게시글 생성에 사용되는 시리얼라이저 입니다.
@@ -43,7 +67,7 @@ class PostCreateSerializer(ModelSerializer):
     Tag 테이블에 존재하는지 확인하고, 없다면 생성하는 과정이 동반됩니다.
     """
 
-    tags = TagSerializer(many=True)
+    tags = TagBaseSerializer(many=True)
 
     def create(self, validated_data):
         writer = self.context["user"]
@@ -76,7 +100,7 @@ class PostUpdateSerializer(ModelSerializer):
     바뀐 태그 => #drf
     """
 
-    tags = TagSerializer(many=True)
+    tags = TagBaseSerializer(many=True)
 
     def update(self, instance, validated_data):
         instance.title = validated_data.get("title", instance.title)
@@ -104,7 +128,7 @@ class PostDeleteSerializer(ModelSerializer):
     is_deleted 필드 값을 True로 수정합니다.
     """
 
-    tags = TagSerializer(many=True, read_only=True)
+    tags = TagBaseSerializer(many=True, read_only=True)
 
     def update(self, instance, validated_data):
         if instance.is_deleted == True:
@@ -118,13 +142,12 @@ class PostDeleteSerializer(ModelSerializer):
         fields = "__all__"
 
 
-class PostRestoreSerializer(ModelSerializer):
+class PostRestoreSerializer(PostDeleteSerializer):
     """
     삭제된 게시글 복구 시리얼라이저 입니다.
+    PostDeleteSerializer를 상속받습니다.
     is_deleted 필드 값을 False로 수정합니다.
     """
-
-    tags = TagSerializer(many=True, read_only=True)
 
     def update(self, instance, validated_data):
         if instance.is_deleted == False:
@@ -132,7 +155,3 @@ class PostRestoreSerializer(ModelSerializer):
         instance.is_deleted = False
         instance.save()
         return instance
-
-    class Meta:
-        model = Post
-        fields = "__all__"

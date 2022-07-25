@@ -6,6 +6,7 @@ from config.permissions import IsOwnerOrReadOnly
 
 from .models import Post
 from .serializers import (
+    DeletedPostListSerializer,
     PostCreateSerializer,
     PostDeleteSerializer,
     PostListSerializer,
@@ -37,7 +38,9 @@ class PostListCreateView(generics.ListCreateAPIView):
 
     def get_serializer_class(self):
         """HTTP 메소드에 따라 다른 serializer를 반환합니다."""
-        if self.request.method == "GET":
+        if self.request.method == "GET" and self.request.GET:
+            return DeletedPostListSerializer
+        elif self.request.method == "GET":
             return PostListSerializer
         else:
             return PostCreateSerializer
@@ -72,7 +75,7 @@ class PostListCreateView(generics.ListCreateAPIView):
 # url : GET, PUT, PATCH /api/v1/posts/<post_id>
 class PostRetrieveUpdateDeleteView(generics.RetrieveUpdateAPIView):
     """
-    게시글 상세조회, 수정, 삭제(soft delete) view 입니다.
+    게시글 상세조회(GET), 수정(PUT), 삭제(PATCH) view 입니다.
     """
 
     permission_classes = [IsOwnerOrReadOnly]
@@ -94,6 +97,14 @@ class PostRetrieveUpdateDeleteView(generics.RetrieveUpdateAPIView):
         else:
             return PostDeleteSerializer
 
+    def retrieve(self, request, *args, **kwargs):
+        """게시글을 상세 조회할 때마다 조회수가 1 증가합니다."""
+        post = self.get_object()
+        post.view_counts += 1
+        post.save()
+        serializer = self.get_serializer(post)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     def put(self, request, *args, **kwargs):
         """부분수정도 가능하도록 partial_update를 지원합니다."""
         return self.partial_update(request, *args, **kwargs)
@@ -107,6 +118,5 @@ class PostRestoreView(generics.UpdateAPIView):
 
     permission_classes = [IsOwnerOrReadOnly]
 
-    # queryset = Post.objects.filter(is_deleted=True)
     queryset = Post.objects.all()
     serializer_class = PostRestoreSerializer
