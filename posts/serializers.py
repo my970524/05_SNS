@@ -169,7 +169,7 @@ class PostRestoreSerializer(PostDeleteSerializer):
 
 class PostLikeSerializer(PostBaseSerializer):
     """
-    게시글 좋아요에 상요되는 시리얼라이저 입니다.
+    게시글 좋아요에 사요되는 시리얼라이저 입니다.
     PostBaseSerializer를 상속받습니다.
     """
 
@@ -177,7 +177,23 @@ class PostLikeSerializer(PostBaseSerializer):
         like_users = instance.like_users.all()
         user = self.context["user"]
         if user in like_users:
-            raise serializers.ValidationError("이미 좋아요를 한 포스트 입니다.")
-        instance.like_users.add(user)
+            raise serializers.ValidationError("이미 좋아요를 했습니다.")
+        instance.like_users.remove(user)
+        instance.save()
+        return instance
+
+
+class PostUnlikeSerializer(PostBaseSerializer):
+    """
+    게시글 좋아요 취소에 사용되는 시리얼라이저 입니다.
+    PostBaseSerializer를 상속받습니다.
+    """
+
+    def update(self, instance, validated_data):
+        like_users = instance.like_users.all()
+        user = self.context["user"]
+        if user not in like_users:
+            raise serializers.ValidationError("좋아요를 하지 않은 포스트임으로 좋아요를 취소할 수 없습니다.")
+        instance.like_users.remove(user)
         instance.save()
         return instance

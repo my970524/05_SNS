@@ -12,6 +12,7 @@ from .serializers import (
     PostLikeSerializer,
     PostListSerializer,
     PostRestoreSerializer,
+    PostUnlikeSerializer,
     PostUpdateSerializer,
 )
 
@@ -126,7 +127,7 @@ class PostRestoreView(generics.UpdateAPIView):
 class PostLikeView(generics.UpdateAPIView):
     """
     게시글 좋아요 view 입니다.
-    로그인 한 유저만 좋아요를 누를 수 있습니다.
+    로그인 한 유저만 좋아요를 할 수 있습니다.
     이미 좋아요를 한 경우는 시리얼라이저에서 예외처리 됩니다.
     """
 
@@ -142,8 +143,33 @@ class PostLikeView(generics.UpdateAPIView):
         kwargs["partial"] = True
         context = {"user": request.user}
         post = self.get_object()
-        print(post)
         serializer = self.get_serializer(post, data=request.data, context=context, partial=True)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
         return Response({"message": "이 포스트에 좋아요를 눌렀습니다."})
+
+
+# url : PATCH /api/v1/posts/<post_id>/unlike
+class PostUnlikeView(generics.UpdateAPIView):
+    """
+    게시글 좋아요 취소 view 입니다.
+    로그인 한 유저만 좋아요를 취소할 수 있습니다.
+    좋아요를 하지 않았거나, 이미 취소된 경우는 시리얼라이저에서 예외처리 됩니다.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = Post.objects.filter(is_deleted=False, pk=self.kwargs["pk"])
+        return queryset
+
+    serializer_class = PostUnlikeSerializer
+
+    def patch(self, request, *args, **kwargs):
+        kwargs["partial"] = True
+        context = {"user": request.user}
+        post = self.get_object()
+        serializer = self.get_serializer(post, data=request.data, context=context, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response({"message": "이 포스트에 대한 좋아요를 취소했습니다."})
