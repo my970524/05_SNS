@@ -21,6 +21,8 @@ class PostBaseSerializer(ModelSerializer):
 
     writer = SerializerMethodField()
     tags = SerializerMethodField()
+    like_count = SerializerMethodField()
+    like_users = SerializerMethodField()
 
     def get_writer(self, obj):
         return obj.writer.username
@@ -32,6 +34,17 @@ class PostBaseSerializer(ModelSerializer):
             tag_name = tag.name
             tag_name_list.append(tag_name)
         return tag_name_list
+
+    def get_like_count(self, obj):
+        like_count = obj.like_users.count()
+        return like_count
+
+    def get_like_users(self, obj):
+        like_users_list = obj.like_users.all()
+        result = []
+        for user in like_users_list:
+            result.append({"id": user.id, "username": user.username})
+        return result
 
     class Meta:
         model = Post
@@ -58,9 +71,10 @@ class DeletedPostListSerializer(PostBaseSerializer):
         exclude = []
 
 
-class PostCreateSerializer(ModelSerializer):
+class PostCreateSerializer(PostBaseSerializer):
     """
     게시글 생성에 사용되는 시리얼라이저 입니다.
+    PostBaseSerializer를 상속받습니다.
 
     create 메소드를 오버라이딩 합니다.
     request body에서 받은 tags에 담긴 태그들이
@@ -83,14 +97,11 @@ class PostCreateSerializer(ModelSerializer):
 
         return post
 
-    class Meta:
-        model = Post
-        fields = ["title", "content", "tags"]
 
-
-class PostUpdateSerializer(ModelSerializer):
+class PostUpdateSerializer(PostBaseSerializer):
     """
     게시글 수정에 사용되는 시리얼라이저 입니다.
+    PostBaseSerializer를 상속받습니다.
 
     update 메소드를 오버라이딩 합니다.
     request body에서 받은 태그들로 게시글의 태그들이 교체 됩니다.
@@ -117,14 +128,11 @@ class PostUpdateSerializer(ModelSerializer):
 
         return instance
 
-    class Meta:
-        model = Post
-        fields = ["title", "content", "tags"]
 
-
-class PostDeleteSerializer(ModelSerializer):
+class PostDeleteSerializer(PostBaseSerializer):
     """
-    게시글 삭제 시리얼라이저 입니다.
+    게시글 삭제에 사용되는 시리얼라이저 입니다.
+    PostBaseSerializer를 상속받습니다.
     is_deleted 필드 값을 True로 수정합니다.
     """
 
@@ -137,14 +145,13 @@ class PostDeleteSerializer(ModelSerializer):
         instance.save()
         return instance
 
-    class Meta:
-        model = Post
-        fields = "__all__"
+    class Meta(PostBaseSerializer.Meta):
+        exclude = []
 
 
 class PostRestoreSerializer(PostDeleteSerializer):
     """
-    삭제된 게시글 복구 시리얼라이저 입니다.
+    삭제된 게시글 복구에 사용되는 시리얼라이저 입니다.
     PostDeleteSerializer를 상속받습니다.
     is_deleted 필드 값을 False로 수정합니다.
     """
@@ -153,5 +160,21 @@ class PostRestoreSerializer(PostDeleteSerializer):
         if instance.is_deleted == False:
             raise serializers.ValidationError("이 게시글은 삭제된 게시글이 아닙니다.")
         instance.is_deleted = False
+        instance.save()
+        return instance
+
+
+class PostLikeSerializer(PostBaseSerializer):
+    """
+    게시글 좋아요에 상요되는 시리얼라이저 입니다.
+    PostBaseSerializer를 상속받습니다.
+    """
+
+    def update(self, instance, validated_data):
+        like_users = instance.like_users.all()
+        user = self.context["user"]
+        if user in like_users:
+            raise serializers.ValidationError("이미 좋아요를 한 포스트 입니다.")
+        instance.like_users.add(user)
         instance.save()
         return instance

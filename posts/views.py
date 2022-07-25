@@ -1,5 +1,5 @@
 from rest_framework import generics, status
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 
 from config.permissions import IsOwnerOrReadOnly
@@ -9,6 +9,7 @@ from .serializers import (
     DeletedPostListSerializer,
     PostCreateSerializer,
     PostDeleteSerializer,
+    PostLikeSerializer,
     PostListSerializer,
     PostRestoreSerializer,
     PostUpdateSerializer,
@@ -81,11 +82,7 @@ class PostRetrieveUpdateDeleteView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsOwnerOrReadOnly]
 
     def get_queryset(self):
-        """HTTP 메소드에 따라 다른 queryset을 반환합니다."""
-        if self.request.method == "PATCH":
-            queryset = Post.objects.all()
-        else:
-            queryset = Post.objects.filter(is_deleted=False)
+        queryset = Post.objects.filter(is_deleted=False, pk=self.kwargs["pk"])
         return queryset
 
     def get_serializer_class(self):
@@ -118,5 +115,35 @@ class PostRestoreView(generics.UpdateAPIView):
 
     permission_classes = [IsOwnerOrReadOnly]
 
-    queryset = Post.objects.all()
+    def get_queryset(self):
+        queryset = Post.objects.filter(pk=self.kwargs["pk"])
+        return queryset
+
     serializer_class = PostRestoreSerializer
+
+
+# url : PATCH /api/v1/posts/<post_id>/like
+class PostLikeView(generics.UpdateAPIView):
+    """
+    게시글 좋아요 view 입니다.
+    로그인 한 유저만 좋아요를 누를 수 있습니다.
+    이미 좋아요를 한 경우는 시리얼라이저에서 예외처리 됩니다.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = Post.objects.filter(is_deleted=False, pk=self.kwargs["pk"])
+        return queryset
+
+    serializer_class = PostLikeSerializer
+
+    def patch(self, request, *args, **kwargs):
+        kwargs["partial"] = True
+        context = {"user": request.user}
+        post = self.get_object()
+        print(post)
+        serializer = self.get_serializer(post, data=request.data, context=context, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response({"message": "이 포스트에 좋아요를 눌렀습니다."})
