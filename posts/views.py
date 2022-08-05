@@ -1,3 +1,5 @@
+from django.core.paginator import Paginator
+from django.db.models import Count, Q
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
@@ -52,16 +54,57 @@ class PostListCreateView(generics.ListCreateAPIView):
         쿼리 파라미터로 is_deleted=true가 있는 경우,
         삭제된 게시글 목록을 보여줍니다.
         삭제된 게시글은 본인만 볼 수 있습니다.
+
+        검색 : 키워드를 제목 or 내용에서 포함하는 게시글 검색
+        - parameter : search
+        필터 : 키워드를 태그로 가지고 있는 게시글 필터
+        - parameter : tags
+        정렬 : 작성일, 좋아요 수, 조회수 기준으로 정렬
+        - parameter : order
+        페이지네이션 : default는 게시글 5개씩, 첫 번째 페이지 반환
+        - parameter :page_counts(한 페이지 게시글 개수), page_num(보여주는 페이지 번호)
         """
-        if request.GET:
+        if request.GET.get("is_deleted"):
             if request.user.is_anonymous:
                 return Response({"error": "접근권한이 없습니다."}, status=status.HTTP_401_UNAUTHORIZED)
             queryset = Post.objects.filter(writer=request.user, is_deleted=True)
             serializer = self.get_serializer(queryset, many=True)
             return Response(serializer.data)
         else:
-            queryset = self.get_queryset()
-            serializer = self.get_serializer(queryset, many=True)
+            objs = self.get_queryset()
+            """게시글 제목, 내용에서 검색"""
+            search = request.GET.get("search")
+            if search:
+                objs = objs.filter(Q(title__icontains=search) | Q(content__icontains=search))
+
+            """게시글 태그 필터링"""
+            tags = request.GET.get("tags")
+            if tags:
+                tags = tags.split(",")
+                objs = objs.filter(tags__name__in=tags)
+
+            """게시글 정렬 (작성일, 좋아요 수, 조회수 중 택 1 기준)"""
+            order = request.GET.get("order")
+            if order:
+                if order == "asc":
+                    objs = objs.order_by("created_at", "id")
+                elif order == "desc":
+                    objs = objs.order_by("-created_at", "id")
+                elif order == "likes_asc":
+                    objs = objs.annotate(likes=Count("like_users")).order_by("likes", "id")
+                elif order == "likes_desc":
+                    objs = objs.annotate(likes=Count("like_users")).order_by("-likes", "id")
+                elif order == "views_asc":
+                    objs = objs.order_by("view_counts", "id")
+                elif order == "views_desc":
+                    objs = objs.order_by("-view_counts", "id")
+
+            """게시글 페이지네이션"""
+            page_counts = request.GET.get("page_counts", 5)
+            page_num = request.GET.get("page_num", 1)
+            paginator = Paginator(objs, page_counts)
+
+            serializer = self.get_serializer(paginator.get_page(page_num), many=True)
             return Response(serializer.data)
 
     def create(self, request):
@@ -117,7 +160,7 @@ class PostRestoreView(generics.UpdateAPIView):
     permission_classes = [IsOwnerOrReadOnly]
 
     def get_queryset(self):
-        queryset = Post.objects.filter(pk=self.kwargs["pk"])
+        queryset = Post.objects.filter(is_deleted=True, pk=self.kwargs["pk"])
         return queryset
 
     serializer_class = PostRestoreSerializer
