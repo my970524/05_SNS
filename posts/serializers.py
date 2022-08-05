@@ -178,7 +178,7 @@ class PostLikeSerializer(PostBaseSerializer):
         user = self.context["user"]
         if user in like_users:
             raise serializers.ValidationError("이미 좋아요를 했습니다.")
-        instance.like_users.remove(user)
+        instance.like_users.add(user)
         instance.save()
         return instance
 
@@ -193,7 +193,7 @@ class PostUnlikeSerializer(PostBaseSerializer):
         like_users = instance.like_users.all()
         user = self.context["user"]
         if user not in like_users:
-            raise serializers.ValidationError("좋아요를 하지 않은 포스트임으로 좋아요를 취소할 수 없습니다.")
+            raise serializers.ValidationError("좋아요를 하지 않은 게시글로 좋아요를 취소할 수 없습니다.")
         instance.like_users.remove(user)
         instance.save()
         return instance
